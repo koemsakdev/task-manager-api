@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, Logger } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { AuthModule } from "./modules/auth/auth.module";
@@ -23,17 +23,30 @@ import { RolesModule } from "./modules/roles/roles.module";
     // Database
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: "postgres",
-        host: configService.get("DB_HOST"),
-        port: configService.get<number>("DB_PORT"),
-        username: configService.get("DB_USERNAME"),
-        password: configService.get("DB_PASSWORD"),
-        database: configService.get("DB_NAME"),
-        entities: [__dirname + "/**/*.entity{.ts,.js}"],
-        synchronize: configService.get("NODE_ENV") === "development",
-        logging: configService.get("NODE_ENV") === "development",
-      }),
+      useFactory: (configService: ConfigService) => {
+        const logger = new Logger("TypeOrmConfig");
+
+        // Debug logging
+        logger.log(`DB_HOST: ${configService.get("DB_HOST")}`);
+        logger.log(`DB_PORT: ${configService.get("DB_PORT")}`);
+        logger.log(`DB_SCHEMA: ${configService.get("DB_SCHEMA", "core")}`);
+
+        return {
+          type: "postgres",
+          host: configService.get("DB_HOST"),
+          port: configService.get<number>("DB_PORT"),
+          username: configService.get("DB_USERNAME"),
+          password: configService.get("DB_PASSWORD"),
+          database: configService.get("DB_NAME"),
+          schema: configService.get("DB_SCHEMA", "core"),
+          entities: [__dirname + "/**/*.entity{.ts,.js}"],
+          synchronize: false,
+          logging: true,
+          ssl: {
+            rejectUnauthorized: false,
+          },
+        };
+      },
       inject: [ConfigService],
     }),
 
