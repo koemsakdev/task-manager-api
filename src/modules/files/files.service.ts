@@ -2,18 +2,21 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { ConfigService } from '@nestjs/config';
-import * as fs from 'fs';
-import * as path from 'path';
-import { v4 as uuidv4 } from 'uuid';
-import { File } from './entities/file.entity';
-import { ProjectsService } from '../projects/projects.service';
-import { ActivityLogsService } from '../activity-logs/activity-logs.service';
-import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
-import { ActivityAction, EntityType } from '../../common/constants';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { ConfigService } from "@nestjs/config";
+import * as fs from "fs";
+import * as path from "path";
+import { v4 as uuidv4 } from "uuid";
+import { File } from "./entities/file.entity";
+import { ProjectsService } from "../projects/projects.service";
+import { ActivityLogsService } from "../activity-logs/activity-logs.service";
+import {
+  PaginationDto,
+  PaginatedResponseDto,
+} from "../../common/dto/pagination.dto";
+import { ActivityAction, EntityType } from "../../common/constants";
 
 @Injectable()
 export class FilesService {
@@ -26,10 +29,14 @@ export class FilesService {
     private activityLogsService: ActivityLogsService,
     private configService: ConfigService,
   ) {
-    this.uploadPath = this.configService.get('UPLOAD_DEST', './uploads');
+    this.uploadPath = this.configService.get("UPLOAD_DEST", "./uploads");
     // Ensure upload directory exists
-    if (!fs.existsSync(this.uploadPath)) {
-      fs.mkdirSync(this.uploadPath, { recursive: true });
+    try {
+      if (!fs.existsSync(this.uploadPath)) {
+        fs.mkdirSync(this.uploadPath, { recursive: true });
+      }
+    } catch (error) {
+      console.log("Skipping folder creation for serverless environment");
     }
   }
 
@@ -43,11 +50,13 @@ export class FilesService {
     const canUpload = await this.projectsService.hasPermission(
       projectId,
       userId,
-      'file',
-      'upload',
+      "file",
+      "upload",
     );
     if (!canUpload) {
-      throw new ForbiddenException('You do not have permission to upload files');
+      throw new ForbiddenException(
+        "You do not have permission to upload files",
+      );
     }
 
     // Generate unique filename
@@ -99,22 +108,22 @@ export class FilesService {
     await this.projectsService.findOne(projectId, userId);
 
     const queryBuilder = this.fileRepository
-      .createQueryBuilder('file')
-      .leftJoinAndSelect('file.uploadedBy', 'uploader')
-      .where('file.projectId = :projectId', { projectId });
+      .createQueryBuilder("file")
+      .leftJoinAndSelect("file.uploadedBy", "uploader")
+      .where("file.projectId = :projectId", { projectId });
 
     if (taskId) {
-      queryBuilder.andWhere('file.taskId = :taskId', { taskId });
+      queryBuilder.andWhere("file.taskId = :taskId", { taskId });
     }
 
     queryBuilder
       .select([
-        'file',
-        'uploader.id',
-        'uploader.fullName',
-        'uploader.avatarUrl',
+        "file",
+        "uploader.id",
+        "uploader.fullName",
+        "uploader.avatarUrl",
       ])
-      .orderBy('file.createdAt', 'DESC')
+      .orderBy("file.createdAt", "DESC")
       .skip(pagination.skip)
       .take(pagination.limit);
 
@@ -125,22 +134,22 @@ export class FilesService {
 
   async findOne(id: string, userId: string): Promise<File> {
     const file = await this.fileRepository
-      .createQueryBuilder('file')
-      .leftJoinAndSelect('file.uploadedBy', 'uploader')
-      .leftJoinAndSelect('file.task', 'task')
-      .where('file.id = :id', { id })
+      .createQueryBuilder("file")
+      .leftJoinAndSelect("file.uploadedBy", "uploader")
+      .leftJoinAndSelect("file.task", "task")
+      .where("file.id = :id", { id })
       .select([
-        'file',
-        'uploader.id',
-        'uploader.fullName',
-        'uploader.avatarUrl',
-        'task.id',
-        'task.title',
+        "file",
+        "uploader.id",
+        "uploader.fullName",
+        "uploader.avatarUrl",
+        "task.id",
+        "task.title",
       ])
       .getOne();
 
     if (!file) {
-      throw new NotFoundException('File not found');
+      throw new NotFoundException("File not found");
     }
 
     await this.projectsService.findOne(file.projectId, userId);
@@ -155,11 +164,13 @@ export class FilesService {
     const canDelete = await this.projectsService.hasPermission(
       file.projectId,
       userId,
-      'file',
-      'delete',
+      "file",
+      "delete",
     );
     if (!canDelete && file.uploadedById !== userId) {
-      throw new ForbiddenException('You do not have permission to delete this file');
+      throw new ForbiddenException(
+        "You do not have permission to delete this file",
+      );
     }
 
     // Delete physical file
@@ -178,11 +189,13 @@ export class FilesService {
     const canDownload = await this.projectsService.hasPermission(
       file.projectId,
       userId,
-      'file',
-      'download',
+      "file",
+      "download",
     );
     if (!canDownload) {
-      throw new ForbiddenException('You do not have permission to download files');
+      throw new ForbiddenException(
+        "You do not have permission to download files",
+      );
     }
 
     return path.join(process.cwd(), file.fileUrl);
