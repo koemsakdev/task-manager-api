@@ -1,16 +1,18 @@
-import { Module, forwardRef } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { MulterModule } from '@nestjs/platform-express';
-import { FilesService } from './files.service';
-import { FilesController } from './files.controller';
-import { File } from './entities/file.entity';
-import { ProjectsModule } from '../projects/projects.module';
-import { ActivityLogsModule } from '../activity-logs/activity-logs.module';
+import { Module, forwardRef } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { MulterModule } from "@nestjs/platform-express";
+import { memoryStorage } from "multer";
+import { FilesService } from "./files.service";
+import { FilesController } from "./files.controller";
+import { File } from "./entities/file.entity";
+import { ProjectsModule } from "../projects/projects.module";
+import { ActivityLogsModule } from "../activity-logs/activity-logs.module";
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([File]),
     MulterModule.register({
+      storage: memoryStorage(), // Store in memory for S3 upload
       limits: {
         fileSize: 10 * 1024 * 1024, // 10MB
       },
