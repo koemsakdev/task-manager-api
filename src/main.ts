@@ -68,15 +68,28 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup("docs", app, document);
+  SwaggerModule.setup("docs", app, document, {
+    customCssUrl:
+      "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui.min.css",
+    customJs: [
+      "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-bundle.min.js",
+      "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-standalone-preset.min.js",
+    ],
+    swaggerOptions: {
+      persistAuthorization: true,
+    },
+  });
 
   const port = configService.get<number>("PORT", 3000);
   await app.listen(port);
 
-  console.log(
-    `Application is running on: http://localhost:${port}/${apiPrefix}`,
-  );
-  console.log(`Swagger documentation: http://localhost:${port}/docs`);
+  console.log(`
+  ========================================
+  🚀 Application is running on: http://localhost:${port}
+  📚 Swagger docs: http://localhost:${port}/docs
+  🔗 API endpoint: http://localhost:${port}/${apiPrefix}
+  ========================================
+  `);
 }
 
 bootstrap();
